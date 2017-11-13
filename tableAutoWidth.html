@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        .left {
+            position: absolute;
+            width: 100px;
+            height: 1000px;
+            background: #ccc;
+        }
+
+        .right{
+            position: absolute;
+            right:0;
+            width: 1000px;
+        }
+
+        table {
+            margin: 0 auto;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        thead {
+            background: #999;
+        }
+
+        td {
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+    </style>
+</head>
+<body>
+<div class="left"></div>
+<div class="right">
+    <table cellspacing="0">
+        <thead>
+        <tr>
+            <td>InMyTable</td>
+            <td>InMyTable</td>
+            <td>InMyTable</td>
+            <td>InMyTable</td>
+            <td>InMyTable</td>
+            <td>InMyTable</td>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>InMyTableInMyTable</td>
+            <td>InMyTableInMyTable</td>
+            <td>InMyTableInMyTable</td>
+            <td>InMyTableInMyTable</td>
+            <td>InMyTableInMyTable</td>
+            <td>InMyTableInMyTable</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>
