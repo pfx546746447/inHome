@@ -1,0 +1,136 @@
+django+uwsgi+nginx配置
+
+安装nginx,uwsgi
+
+进入nginx配置目录下,
+配置nginx基础文件,nginx.conf
+
+nginx各参数含义:https://www.cnblogs.com/justbio/p/5535466.html
+mime.types的作用:http://blog.csdn.net/debug_zhang/article/details/50749646
+
+user  www-data;  #用户,可为root
+worker_processes  1;  #进程数
+
+error_log  /var/log/nginx/error.log warn;  #errorlog文件
+pid        /var/run/nginx.pid; 
+
+events { 
+    worker_connections  1024;  
+    multi_accept on;    
+} 
+
+http { 
+    include       /etc/nginx/mime.types; 
+    default_type  application/octet-stream; 
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" ' 
+                      '$status $body_bytes_sent "$http_referer" ' 
+                      '"$http_user_agent" "$http_x_forwarded_for"'; 
+
+    access_log  /var/log/nginx/access.log  main; 
+
+    sendfile        on; 
+    #tcp_nopush     on; 
+
+    keepalive_timeout  65; 
+
+    #gzip  on; 
+
+    include /etc/nginx/conf.d/*.conf; 
+} 
+
+进入conf.d,配置nginx文件:
+
+server { # 这个server标识我要配置了 
+    listen 8090; # 我要监听那个端口 
+    server_name 172.26.49.131; # 你访问的路径前面的url名称 
+    #access_log /var/log/nginx/nginx.log; # Nginx日志配置 
+
+    error_page 404 /404.html; # 错误页面 
+    error_page 500 502 503 504 /50x.html; # 错误页面 
+
+    # 指定项目路径uwsgi 
+    location / { # 这个location就和咱们Django的url(r'^admin/', admin.site.urls), 
+        include uwsgi_params; # 导入一个Nginx模块他是用来和uWSGI进行通讯的 
+        uwsgi_connect_timeout 30; # 设置连接uWSGI超时时间 
+        uwsgi_pass  127.0.0.1:9090; 
+    } 
+
+    # 指定静态文件路径 
+    location /static { 
+        alias /home/user/PycharmProjects/MyBlog-master/MyBlog/voc_static; 
+    } 
+} 
+
+如果缺失uwsgi_params文件需要自己创建,内容为:
+uwsgi_param     QUERY_STRING            $query_string; 
+uwsgi_param     REQUEST_METHOD          $request_method; 
+uwsgi_param     CONTENT_TYPE            $content_type; 
+uwsgi_param     CONTENT_LENGTH          $content_length; 
+
+uwsgi_param     REQUEST_URI             $request_uri; 
+uwsgi_param     PATH_INFO               $document_uri; 
+uwsgi_param     DOCUMENT_ROOT           $document_root; 
+uwsgi_param     SERVER_PROTOCOL         $server_protocol; 
+uwsgi_param     UWSGI_SCHEME            $scheme; 
+
+uwsgi_param     REMOTE_ADDR             $remote_addr; 
+uwsgi_param     REMOTE_PORT             $remote_port; 
+uwsgi_param     SERVER_PORT             $server_port; 
+uwsgi_param     SERVER_NAME             $server_name; 
+
+
+nginx配置完毕,以下是nginx的基本调试命令
+nginx:通过-s调用控制， 
+sudo /etc/init.d/nginx -[option] 
+option选项: 
+	stop：快速关闭 
+	quit：正常关机 
+	reload：重载配置文件 
+	reopen：重新打开配置文件 
+    status:查看状态 
+
+当启动fail时调试nginx错误,sudo nginx -t 
+
+当出现此错误时,nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use),意味80端口被占用, 
+使用sudo fuser -k 80/tcp命令. 
+
+出现此错时open() "/var/run/nginx.pid" failed (13: Permission denied) 
+sudo nginx -c /etc/nginx/nginx.conf 指定启动文件
+
+
+uwsgi参数意义:http://heipark.iteye.com/blog/1847421
+
+配置uwsgi文件,在django根目录下创建uwsgi.ini文件,
+
+# uwsig使用配置文件启动
+[uwsgi]
+# 项目目录
+chdir=/home/user/PycharmProjects/MyBlog-master/MyBlog
+# 指定项目的application
+module=MyBlog.wsgi:application
+# 指定sock的文件路径
+socket=127.0.0.1:9090;
+# 进程个数
+workers=1
+# 指定IP端口
+#http=172.26.49.131:8012
+# 启动uwsgi的用户名和用户组
+uid=root
+gid=root
+# 启用主进程
+master=true
+# 自动移除unix Socket和pid文件当服务停止的时候
+vacuum=true
+# 序列化接受的内容，如果可能的话
+thunder-lock=true
+# 启用线程
+enable-threads=true
+# 设置自中断时间
+harakiri=30
+# 设置缓冲
+post-buffering=4096
+# 设置日志目录
+#daemonize=/var/log/uwsgi/uwsgi.log
+如果运行过程中报错文件缺失,则去对应目录下创建同名文件.
+配置完后运行,uwsgi –plugin python –ini uwsgi.ini 运行uwsgi文件
+再去运行/etc/init.d/nginx start启动nginx
